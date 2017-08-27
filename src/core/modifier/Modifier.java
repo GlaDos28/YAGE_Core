@@ -22,8 +22,7 @@ public final class Modifier implements Executable {
 	}
 
 	@Override
-	public boolean execute() {
+	public void execute() {
 		this.body.extractRunnable(this.data).run();
-		return this.data.shouldDestruct();
 	}
 }

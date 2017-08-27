@@ -23,10 +23,11 @@ public final class GObject implements Executable {
 	private final Map<String, Object>        attributes;
 	private final Set<String>                markers;
 	private final TwoIndexedList<Executable> subObjectsAndMidModifiers; /* modifiers have no name, only priority */
-	private final PriorityList<Modifier>     preModifiers;
-	private final PriorityList<Modifier>     postModifiers;
+	private final PriorityList<Executable>   preModifiers;
+	private final PriorityList<Executable>   postModifiers;
 	private final MarkedObjectAccessor       markedObjectAccessor;
 	private final PutInPoolAccessor          putInPool;
+	private       boolean                    shouldDestruct;
 
 	public GObject(MarkedObjectAccessor markedObjectAccessor, PutInPoolAccessor putInPool, String name, int priority) {
 		this(markedObjectAccessor, putInPool, name, priority, new Pair[0], new String[0], new Pair[0], new Modifier[0]);
@@ -46,6 +47,7 @@ public final class GObject implements Executable {
 		this.postModifiers             = new PriorityList<>();
 		this.markedObjectAccessor      = markedObjectAccessor;
 		this.putInPool                 = putInPool;
+		this.shouldDestruct            = false;
 
 		//** assigning values of attributes, markers, subObjectsAndMidModifiers and modifiers
 
@@ -91,6 +93,10 @@ public final class GObject implements Executable {
 		return this.putInPool;
 	}
 
+	public boolean shouldDestruct() {
+		return this.shouldDestruct;
+	}
+
 	//** setters
 
 	public GObject putAttribute(String attributeName, Object attributeValue) {
@@ -105,6 +111,12 @@ public final class GObject implements Executable {
 
 	public GObject putSubObject(String subObjectName, GObject subObjectValue) {
 		this.subObjectsAndMidModifiers.put(subObjectName, subObjectValue.getPriority(), subObjectValue);
+		return this;
+	}
+
+	public GObject deleteSubObject(String subObjectName) {
+		GObject object = (GObject) this.subObjectsAndMidModifiers.getByName(subObjectName);
+		this.subObjectsAndMidModifiers.delete(subObjectName, object.getPriority(), object);
 		return this;
 	}
 
@@ -131,24 +143,43 @@ public final class GObject implements Executable {
 
 	//** other
 
+	private boolean handleModifier(Modifier modifier, PriorityList<Executable> list) {
+		modifier.execute();
+
+		if (modifier.getData().shouldDestruct())
+			list.delete(modifier.getData().getPriority(), modifier);
+
+		if (modifier.getData().shouldDestructObject()) {
+			this.shouldDestruct = true;
+			return true;
+		}
+
+		return false;
+	}
+
 	@Override
-	public boolean execute() {
-		for (Modifier modifier : this.preModifiers.getSorted())
-			if (modifier.execute())
-				this.preModifiers.delete(modifier.getData().getPriority(), modifier);
+	public void execute() {
+		for (Executable modifier : this.preModifiers.getSorted())
+			if (handleModifier((Modifier) modifier, this.preModifiers))
+				return;
 
-		for (Executable subObjectOrModifier : this.subObjectsAndMidModifiers.getSortedByPriority())
-			if (subObjectOrModifier.execute())
-				if (subObjectOrModifier instanceof GObject)
-					this.subObjectsAndMidModifiers.delete(((GObject) subObjectOrModifier).getName(), ((GObject) subObjectOrModifier).getPriority(), subObjectOrModifier);
-				else
-					this.subObjectsAndMidModifiers.delete(null, ((Modifier) subObjectOrModifier).getData().getPriority(), subObjectOrModifier);
+		for (Executable subObjectOrModifier : this.subObjectsAndMidModifiers.getSortedByPriority()) {
+			subObjectOrModifier.execute();
 
+			if (subObjectOrModifier instanceof GObject) {
+				GObject object = (GObject) subObjectOrModifier;
 
-		for (Modifier modifier : this.postModifiers.getSorted())
-			if (modifier.execute())
-				this.postModifiers.delete(modifier.getData().getPriority(), modifier);
+				object.execute();
 
-		return false; /* TODO object destruction */
+				if (object.shouldDestruct())
+					this.subObjectsAndMidModifiers.delete(object.getName(), object.getPriority(), object);
+			}
+			else if (handleModifier((Modifier) subObjectOrModifier, this.subObjectsAndMidModifiers.getPriorityList()))
+				return;
+		}
+
+		for (Executable modifier : this.postModifiers.getSorted())
+			if (handleModifier((Modifier) modifier, this.postModifiers))
+				return;
 	}
 }

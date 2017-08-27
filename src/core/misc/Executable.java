@@ -8,5 +8,5 @@ package core.misc;
  */
 @FunctionalInterface
 public interface Executable {
-	boolean execute(); /* whether to destroy object after execution */
+	void execute();
 }

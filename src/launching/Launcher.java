@@ -28,7 +28,7 @@ public final class Launcher {
 		});
 
 		MODIFIER_BODIES[1].setBody(data -> () -> {
-			System.out.println("I want to say");
+			System.out.println("And again hello, world!");
 		});
 	}
 
@@ -38,7 +38,6 @@ public final class Launcher {
 			.attachGlobalModifier(MODIFIER_BODIES[0])
 			.createPool(new CustomPool("test pool", 100));
 
-		manager.startLoop();
 		manager.startLoop();
 	}
 }

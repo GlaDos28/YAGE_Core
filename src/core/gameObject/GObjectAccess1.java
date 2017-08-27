@@ -46,6 +46,11 @@ public final class GObjectAccess1 {
 		return this;
 	}
 
+	public GObjectAccess1 deleteSubObject(String subObjectName) {
+		this.object.deleteSubObject(subObjectName);
+		return this;
+	}
+
 	public GObjectAccess1 putModifier(Modifier modifier) {
 		this.object.putModifier(modifier);
 		return this;

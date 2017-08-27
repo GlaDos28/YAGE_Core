@@ -21,6 +21,7 @@ public final class ModifierData { /* TODO object destruct, sub-object destruct, 
 	private final int                  priority;
 	private final Order                order;
 	private       boolean              shouldDestruct;
+	private       boolean              shouldDestructObject;
 
 	public ModifierData(GObject object, String pool, int priority, Order order) {
 		this(new GObjectAccess1(object), object.getMarkedObjectAccessor(), object.getPutInPoolAccessor(), pool, priority, order);
@@ -34,6 +35,7 @@ public final class ModifierData { /* TODO object destruct, sub-object destruct, 
 		this.priority             = priority;
 		this.order                = order;
 		this.shouldDestruct       = false;
+		this.shouldDestructObject = false;
 	}
 
 	//** used by modifiers
@@ -59,6 +61,14 @@ public final class ModifierData { /* TODO object destruct, sub-object destruct, 
 		this.shouldDestruct = true;
 	}
 
+	public void doDestructObject() {
+		this.shouldDestructObject = true;
+	}
+
+	public void doDestructSubObject(String subObjectName) {
+		this.objectAccess.deleteSubObject(subObjectName);
+	}
+
 	//** other
 
 	public String getPool() {
@@ -75,5 +85,9 @@ public final class ModifierData { /* TODO object destruct, sub-object destruct, 
 
 	public boolean shouldDestruct() {
 		return this.shouldDestruct;
+	}
+
+	public boolean shouldDestructObject() {
+		return this.shouldDestructObject;
 	}
 }

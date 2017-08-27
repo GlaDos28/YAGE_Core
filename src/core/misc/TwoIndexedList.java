@@ -41,4 +41,8 @@ public final class TwoIndexedList<V> {
 	public ArrayList<V> getSortedByPriority() {
 		return this.priorityList.getSorted();
 	}
+
+	public PriorityList<V> getPriorityList() {
+		return this.priorityList;
+	}
 }
