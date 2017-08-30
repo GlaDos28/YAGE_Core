@@ -10,8 +10,14 @@ import core.gameObject.GObject;
  */
 public final class DefaultPool extends Pool {
 	public DefaultPool(String name, int priority, GObject rootObject) {
-		super(name, priority, null);
+		super(name, priority, null, null);
 
-		super.setExecutor(rootObject::execute);
+		super.setExecutor(() -> {
+			try {
+				rootObject.execute();
+			} catch (Exception ex) {
+				super.filterException(ex);
+			}
+		});
 	}
 }

@@ -8,5 +8,5 @@ package core.misc;
  */
 @FunctionalInterface
 public interface Executable {
-	void execute();
+	void execute() throws Exception;
 }

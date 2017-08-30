@@ -1,6 +1,10 @@
 package core.misc;
 
-import java.util.ArrayList;
+import core.misc.doubleLinkedList.DoubleLinkedListElement;
+import core.misc.priorityList.ListElementOperator;
+import core.misc.priorityList.PriorityList;
+import javafx.util.Pair;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,7 +16,7 @@ import java.util.Map;
  * @since 27.08.17
  */
 public final class TwoIndexedList<V> {
-	private final Map<String, V>  nameList;
+	private final Map<String, Pair<Integer, V>>  nameList;
 	private final PriorityList<V> priorityList;
 
 	public TwoIndexedList() {
@@ -22,27 +26,34 @@ public final class TwoIndexedList<V> {
 
 	public void put(String name, int priority, V value) {
 		if (name != null)
-			this.nameList.put(name, value);
+			this.nameList.put(name, new Pair<>(priority, value));
 
 		this.priorityList.put(priority, value);
 	}
 
-	public void delete(String name, int priority, V value) {
+	public void delete(String name, DoubleLinkedListElement<Pair<Integer, V>> element) {
 		if (name != null)
 			this.nameList.remove(name);
 
-		this.priorityList.delete(priority, value);
+		this.priorityList.delete(element);
+	}
+
+	public void delete(String name) {
+		this.priorityList.delete(this.nameList.get(name).getKey(), this.nameList.get(name).getValue());
+
+		if (name != null)
+			this.nameList.remove(name);
 	}
 
 	public V getByName(String name) {
-		return this.nameList.get(name);
+		return this.nameList.get(name).getValue();
 	}
 
-	public ArrayList<V> getSortedByPriority() {
-		return this.priorityList.getSorted();
+	public DoubleLinkedListElement<Pair<Integer, V>> getHeadElement() {
+		return this.priorityList.getFirstElement();
 	}
 
-	public PriorityList<V> getPriorityList() {
-		return this.priorityList;
+	public void forEach(ListElementOperator<V> operator) throws Exception {
+		this.priorityList.forEach(operator);
 	}
 }

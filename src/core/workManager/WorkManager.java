@@ -3,6 +3,8 @@ package core.workManager;
 import core.gameObject.GObject;
 import core.gameObject.GObjectAccess3;
 import core.misc.TwoIndexedList;
+import core.misc.exceptionsFiltering.ExceptionFilter;
+import core.misc.exceptionsFiltering.FilterExceptions;
 import core.modifier.Modifier;
 import core.modifier.ModifierBody;
 import core.modifier.ModifierData;
@@ -21,10 +23,10 @@ import java.util.Map;
  * @author Evgeny Savelyev
  * @since 23.08.17
  */
-public final class WorkManager {
+public final class WorkManager extends FilterExceptions<Exception> {
 	private static final int    DEFAULT_POOL_PRIORITY = 0;
 
-	public static final int    DEFAULT_DELAY_TIME = 50; /* in milliseconds */
+	public static final int    DEFAULT_DELAY_TIME = 500; /* in milliseconds */
 	public static final String DEFAULT_POOL_NAME  = "default";
 
 	private final long                            delayTime; /* in nanoseconds */
@@ -33,10 +35,20 @@ public final class WorkManager {
 	private final Map<String, ArrayList<GObject>> markedObjects;
 
 	public WorkManager() {
-		this(DEFAULT_DELAY_TIME);
+		this(DEFAULT_DELAY_TIME, null);
 	}
 
-	public WorkManager(int delayTime) { /* in milliseconds */
+	public WorkManager(ExceptionFilter<Exception> exceptionFilter) {
+		this(DEFAULT_DELAY_TIME, exceptionFilter);
+	}
+
+	public WorkManager(int delayTime) {
+		this(delayTime, null);
+	}
+
+	public WorkManager(int delayTime, ExceptionFilter<Exception> exceptionFilter) {
+		super(exceptionFilter);
+
 		this.delayTime     = (long) delayTime * 1000000;
 		this.pools         = new TwoIndexedList<>();
 		this.rootObject    = new GObject(
@@ -75,15 +87,18 @@ public final class WorkManager {
 
 	//** other
 
-	public void startLoop() {
+	public void startLoop() throws Exception {
 		long prevTime;
 		long curTime = System.nanoTime();
 
 		while (true) {
 			prevTime = curTime;
 
-			for (Pool pool : pools.getSortedByPriority())
-				pool.executeModifiers();
+			try {
+				this.pools.forEach((elem, value) -> value.executeModifiers());
+			} catch (Exception ex) {
+				super.filterException(ex);
+			}
 
 			curTime = System.nanoTime();
 

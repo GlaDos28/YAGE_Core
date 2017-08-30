@@ -1,8 +1,11 @@
 package core.gameObject;
 
 import core.misc.Executable;
-import core.misc.PriorityList;
+import core.misc.exceptionsFiltering.ExceptionFilter;
+import core.misc.exceptionsFiltering.FilterExceptions;
+import core.misc.priorityList.PriorityList;
 import core.misc.TwoIndexedList;
+import core.misc.doubleLinkedList.DoubleLinkedListElement;
 import core.modifier.Modifier;
 import core.workManager.MarkedObjectAccessor;
 import core.workManager.PutInPoolAccessor;
@@ -17,7 +20,7 @@ import java.util.*;
  * @author Evgeny Savelyev
  * @since 23.08.17
  */
-public final class GObject implements Executable {
+public final class GObject extends FilterExceptions<Exception> implements Executable {
 	private final String                     name;
 	private final int                        priority;
 	private final Map<String, Object>        attributes;
@@ -30,14 +33,24 @@ public final class GObject implements Executable {
 	private       boolean                    shouldDestruct;
 
 	public GObject(MarkedObjectAccessor markedObjectAccessor, PutInPoolAccessor putInPool, String name, int priority) {
-		this(markedObjectAccessor, putInPool, name, priority, new Pair[0], new String[0], new Pair[0], new Modifier[0]);
+		this(markedObjectAccessor, putInPool, name, priority, new Pair[0], new String[0], new Pair[0], new Modifier[0], null);
+	}
+
+	public GObject(MarkedObjectAccessor markedObjectAccessor, PutInPoolAccessor putInPool, String name, int priority, ExceptionFilter<Exception> exceptionFilter) {
+		this(markedObjectAccessor, putInPool, name, priority, new Pair[0], new String[0], new Pair[0], new Modifier[0], exceptionFilter);
 	}
 
 	public GObject(MarkedObjectAccessor markedObjectAccessor, PutInPoolAccessor putInPool, String name, int priority, Modifier... modifiers) {
-		this(markedObjectAccessor, putInPool, name, priority, new Pair[0], new String[0], new Pair[0], modifiers);
+		this(markedObjectAccessor, putInPool, name, priority, new Pair[0], new String[0], new Pair[0], modifiers, null);
 	}
 
-	public GObject(MarkedObjectAccessor markedObjectAccessor, PutInPoolAccessor putInPool, String name, int priority, Pair<String, Object>[] attributes, String[] markers, Pair<String, GObject>[] subObjects, Modifier[] modifiers) {
+	public GObject(MarkedObjectAccessor markedObjectAccessor, PutInPoolAccessor putInPool, String name, int priority, ExceptionFilter<Exception> exceptionFilter, Modifier... modifiers) {
+		this(markedObjectAccessor, putInPool, name, priority, new Pair[0], new String[0], new Pair[0], modifiers, exceptionFilter);
+	}
+
+	public GObject(MarkedObjectAccessor markedObjectAccessor, PutInPoolAccessor putInPool, String name, int priority, Pair<String, Object>[] attributes, String[] markers, Pair<String, GObject>[] subObjects, Modifier[] modifiers, ExceptionFilter<Exception> exceptionFilter) {
+		super(exceptionFilter);
+
 		this.name                      = name;
 		this.priority                  = priority;
 		this.attributes                = new HashMap<>();
@@ -115,8 +128,7 @@ public final class GObject implements Executable {
 	}
 
 	public GObject deleteSubObject(String subObjectName) {
-		GObject object = (GObject) this.subObjectsAndMidModifiers.getByName(subObjectName);
-		this.subObjectsAndMidModifiers.delete(subObjectName, object.getPriority(), object);
+		this.subObjectsAndMidModifiers.delete(subObjectName);
 		return this;
 	}
 
@@ -143,11 +155,17 @@ public final class GObject implements Executable {
 
 	//** other
 
-	private boolean handleModifier(Modifier modifier, PriorityList<Executable> list) {
-		modifier.execute();
+	private boolean handleModifier(DoubleLinkedListElement<Pair<Integer, Executable>> element) throws Exception {
+		Modifier modifier = (Modifier) element.getValue().getValue();
+
+		try {
+			modifier.execute();
+		} catch (Exception ex) {
+			super.filterException(ex);
+		}
 
 		if (modifier.getData().shouldDestruct())
-			list.delete(modifier.getData().getPriority(), modifier);
+			element.unlink();
 
 		if (modifier.getData().shouldDestructObject()) {
 			this.shouldDestruct = true;
@@ -158,28 +176,54 @@ public final class GObject implements Executable {
 	}
 
 	@Override
-	public void execute() {
-		for (Executable modifier : this.preModifiers.getSorted())
-			if (handleModifier((Modifier) modifier, this.preModifiers))
+	public void execute() throws Exception {
+		//** pre-modifiers
+
+		DoubleLinkedListElement<Pair<Integer, Executable>> cur = this.preModifiers.getFirstElement();
+
+		while (cur != null) {
+			DoubleLinkedListElement<Pair<Integer, Executable>> next = cur.getNext();
+
+			if (this.handleModifier(cur))
 				return;
 
-		for (Executable subObjectOrModifier : this.subObjectsAndMidModifiers.getSortedByPriority()) {
-			subObjectOrModifier.execute();
+			cur = next;
+		}
 
-			if (subObjectOrModifier instanceof GObject) {
-				GObject object = (GObject) subObjectOrModifier;
+		//** mid-modifiers and sub-objects
+
+		cur = this.subObjectsAndMidModifiers.getHeadElement();
+
+		while (cur != null) {
+			DoubleLinkedListElement<Pair<Integer, Executable>> next = cur.getNext();
+
+			if (cur.getValue().getValue() instanceof Modifier) {
+				if (this.handleModifier(cur))
+					return;
+			}
+			else {
+				GObject object = (GObject) cur.getValue().getValue();
 
 				object.execute();
 
 				if (object.shouldDestruct())
-					this.subObjectsAndMidModifiers.delete(object.getName(), object.getPriority(), object);
+					cur.unlink();
 			}
-			else if (handleModifier((Modifier) subObjectOrModifier, this.subObjectsAndMidModifiers.getPriorityList()))
-				return;
+
+			cur = next;
 		}
 
-		for (Executable modifier : this.postModifiers.getSorted())
-			if (handleModifier((Modifier) modifier, this.postModifiers))
+		//** post-modifiers
+
+		cur = this.postModifiers.getFirstElement();
+
+		while (cur != null) {
+			DoubleLinkedListElement<Pair<Integer, Executable>> next = cur.getNext();
+
+			if (handleModifier(cur))
 				return;
+
+			cur = next;
+		}
 	}
 }

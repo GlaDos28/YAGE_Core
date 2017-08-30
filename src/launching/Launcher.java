@@ -29,6 +29,7 @@ public final class Launcher {
 
 		MODIFIER_BODIES[1].setBody(data -> () -> {
 			System.out.println("And again hello, world!");
+			throw new RuntimeException("oops");
 		});
 	}
 
@@ -38,6 +39,10 @@ public final class Launcher {
 			.attachGlobalModifier(MODIFIER_BODIES[0])
 			.createPool(new CustomPool("test pool", 100));
 
-		manager.startLoop();
+		try {
+			manager.startLoop();
+		} catch (Exception ex) {
+			System.out.println("ERROR\n" + ex.getMessage());
+		}
 	}
 }

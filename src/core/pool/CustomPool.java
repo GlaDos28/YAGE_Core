@@ -1,7 +1,10 @@
 package core.pool;
 
-import core.misc.PriorityList;
+import core.misc.exceptionsFiltering.ExceptionFilter;
+import core.misc.priorityList.PriorityList;
+import core.misc.doubleLinkedList.DoubleLinkedListElement;
 import core.modifier.Modifier;
+import javafx.util.Pair;
 
 /**
  * Custom pool that executes pool modifiers according to their priority.
@@ -13,13 +16,28 @@ public final class CustomPool extends Pool {
 	private final PriorityList<Modifier> modifiers;
 
 	public CustomPool(String name, int priority) {
-		super(name, priority, null);
+		this(name, priority, null);
+	}
+
+	public CustomPool(String name, int priority, ExceptionFilter<Exception> exceptionFilter) {
+		super(name, priority, null, exceptionFilter);
 
 		this.modifiers = new PriorityList<>();
 
 		super.setExecutor(() -> {
-			for (Modifier modifier : this.modifiers.getSorted())
-				modifier.execute();
+			DoubleLinkedListElement<Pair<Integer, Modifier>> cur = this.modifiers.getFirstElement();
+
+			while (cur != null) {
+				DoubleLinkedListElement<Pair<Integer, Modifier>> next = cur.getNext();
+
+				try {
+					cur.getValue().getValue().execute();
+				} catch (Exception ex) {
+					super.filterException(ex);
+				}
+
+				cur = next;
+			}
 		});
 	}
 
