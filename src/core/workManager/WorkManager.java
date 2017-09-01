@@ -76,7 +76,9 @@ public final class WorkManager extends FilterExceptions<Exception> {
 	//** setters
 
 	public WorkManager attachGlobalModifier(ModifierBody globalModifierBody) {
-		this.rootObject.putModifier(new Modifier(globalModifierBody, new ModifierData(this.rootObject, DEFAULT_POOL_NAME, 0, Order.PRE)));
+		Modifier modifier = new Modifier(globalModifierBody, new ModifierData(this.rootObject, DEFAULT_POOL_NAME, 0, Order.PRE));
+		modifier.getData().setElementLink(this.rootObject.putModifier(modifier));
+
 		return this;
 	}
 

@@ -22,13 +22,15 @@ public final class DoubleLinkedListHead<V> extends DoubleLinkedList<V> {
 		return this.head == null;
 	}
 
-	public void addHead(V value) {
+	public DoubleLinkedListElement<V> addHead(V value) {
 		DoubleLinkedListElement<V> newHead = new DoubleLinkedListElement<>(value, this, this.head);
 
 		if (this.head != null)
 			this.head.setPrev(newHead);
 
 		this.head = newHead;
+
+		return this.head;
 	}
 
 	@Override

@@ -18,11 +18,9 @@ public final class PriorityList<V> {
 		this.data = new DoubleLinkedListHead<>();
 	}
 
-	public void put(int priority, V value) {
-		if (this.data.isEmpty()) {
-			this.data.addHead(new Pair<>(priority, value));
-			return;
-		}
+	public DoubleLinkedListElement<Pair<Integer, V>> put(int priority, V value) {
+		if (this.data.isEmpty())
+			return this.data.addHead(new Pair<>(priority, value));
 
 		DoubleLinkedListElement<Pair<Integer, V>> cur = this.data.getHead();
 
@@ -30,9 +28,9 @@ public final class PriorityList<V> {
 			cur = cur.getNext();
 
 		if (cur.getValue().getKey() >= priority)
-			cur.addPrev(new Pair<>(priority, value));
+			return cur.addPrev(new Pair<>(priority, value));
 		else
-			cur.addNext(new Pair<>(priority, value));
+			return cur.addNext(new Pair<>(priority, value));
 	}
 
 	public void delete(DoubleLinkedListElement<Pair<Integer, V>> element) {

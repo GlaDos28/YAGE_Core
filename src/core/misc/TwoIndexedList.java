@@ -24,11 +24,11 @@ public final class TwoIndexedList<V> {
 		this.priorityList = new PriorityList<>();
 	}
 
-	public void put(String name, int priority, V value) {
+	public DoubleLinkedListElement<Pair<Integer, V>> put(String name, int priority, V value) {
 		if (name != null)
 			this.nameList.put(name, new Pair<>(priority, value));
 
-		this.priorityList.put(priority, value);
+		return this.priorityList.put(priority, value);
 	}
 
 	public void delete(String name, DoubleLinkedListElement<Pair<Integer, V>> element) {

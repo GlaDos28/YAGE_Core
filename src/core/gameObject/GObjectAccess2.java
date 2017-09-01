@@ -1,6 +1,9 @@
 package core.gameObject;
 
+import core.misc.Executable;
+import core.misc.doubleLinkedList.DoubleLinkedListElement;
 import core.modifier.Modifier;
+import javafx.util.Pair;
 
 /**
  * Facade that gives second-level access to all GObject getter methods, modifier adding method, and also getSubObject() returns a GObject with a third-level access.
@@ -29,10 +32,13 @@ public final class GObjectAccess2 {
 		return new GObjectAccess3(this.object.getSubObject(subObjectName));
 	}
 
+	public boolean shouldDestruct() {
+		return this.object.shouldDestruct();
+	}
+
 	//** setters
 
-	public GObjectAccess2 putModifier(Modifier modifier) {
-		this.object.putModifier(modifier);
-		return this;
+	public DoubleLinkedListElement<Pair<Integer,Executable>> putModifier(Modifier modifier) {
+		return this.object.putModifier(modifier);
 	}
 }

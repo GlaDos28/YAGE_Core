@@ -24,12 +24,6 @@ public final class DoubleLinkedListElement<V> extends DoubleLinkedList<V> {
 		return this.value;
 	}
 
-	private DoubleLinkedListElement<V> getPrev() {
-		return this.prev instanceof DoubleLinkedListElement ?
-			(DoubleLinkedListElement<V>) this.prev :
-			null;
-	}
-
 	public DoubleLinkedListElement<V> getNext() {
 		return this.next;
 	}
@@ -40,13 +34,15 @@ public final class DoubleLinkedListElement<V> extends DoubleLinkedList<V> {
 		this.prev = prev;
 	}
 
-	public void addPrev(V value) {
+	public DoubleLinkedListElement<V> addPrev(V value) {
 		boolean prevIsNull = this.prev == null;
 
 		this.prev = new DoubleLinkedListElement<>(value, this.prev, this);
 
 		if (!prevIsNull)
-			((DoubleLinkedListElement<V>) this.prev).getPrev().setNext((DoubleLinkedListElement<V>) this.prev);
+			((DoubleLinkedListElement<V>) this.prev).prev.setNext((DoubleLinkedListElement<V>) this.prev);
+
+		return (DoubleLinkedListElement<V>) this.prev;
 	}
 
 	@Override
@@ -54,13 +50,15 @@ public final class DoubleLinkedListElement<V> extends DoubleLinkedList<V> {
 		this.next = next;
 	}
 
-	public void addNext(V value) {
+	public DoubleLinkedListElement<V> addNext(V value) {
 		boolean nextIsNull = this.next == null;
 
 		this.next = new DoubleLinkedListElement<>(value, this, this.next);
 
 		if (!nextIsNull)
 			this.next.getNext().setPrev(this.next);
+
+		return this.next;
 	}
 
 	public void unlink() {

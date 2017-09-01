@@ -26,4 +26,8 @@ public final class GObjectAccess3 {
 	public GObjectAccess3 getSubObject(String subObjectName) {
 		return new GObjectAccess3(this.object.getSubObject(subObjectName));
 	}
+
+	public boolean shouldDestruct() {
+		return this.object.shouldDestruct();
+	}
 }

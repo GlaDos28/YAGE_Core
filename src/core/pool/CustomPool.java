@@ -1,5 +1,6 @@
 package core.pool;
 
+import core.misc.Executable;
 import core.misc.exceptionsFiltering.ExceptionFilter;
 import core.misc.priorityList.PriorityList;
 import core.misc.doubleLinkedList.DoubleLinkedListElement;
@@ -13,7 +14,7 @@ import javafx.util.Pair;
  * @since 27.08.17
  */
 public final class CustomPool extends Pool {
-	private final PriorityList<Modifier> modifiers;
+	private final PriorityList<Executable> modifiers;
 
 	public CustomPool(String name, int priority) {
 		this(name, priority, null);
@@ -25,15 +26,26 @@ public final class CustomPool extends Pool {
 		this.modifiers = new PriorityList<>();
 
 		super.setExecutor(() -> {
-			DoubleLinkedListElement<Pair<Integer, Modifier>> cur = this.modifiers.getFirstElement();
+			DoubleLinkedListElement<Pair<Integer, Executable>> cur = this.modifiers.getFirstElement();
 
 			while (cur != null) {
-				DoubleLinkedListElement<Pair<Integer, Modifier>> next = cur.getNext();
+				DoubleLinkedListElement<Pair<Integer, Executable>> next = cur.getNext();
+				Modifier modifier = (Modifier) cur.getValue().getValue();
 
-				try {
-					cur.getValue().getValue().execute();
-				} catch (Exception ex) {
-					super.filterException(ex);
+				if (modifier.getData().getOwner().shouldDestruct()) /* possible for custom pools only */
+					cur.unlink();
+				else {
+					try {
+						modifier.execute();
+					} catch (Exception ex) {
+						super.filterException(ex);
+					}
+
+					if (modifier.getData().shouldDestruct() || modifier.getData().shouldDestructObject())
+						cur.unlink();
+
+					if (modifier.getData().shouldDestructObject())
+						modifier.getData().getOwner().doDestruct();
 				}
 
 				cur = next;
@@ -41,7 +53,7 @@ public final class CustomPool extends Pool {
 		});
 	}
 
-	public void putModifier(Modifier modifier) {
-		this.modifiers.put(modifier.getData().getPriority(), modifier);
+	public DoubleLinkedListElement<Pair<Integer, Executable>> putModifier(Modifier modifier) {
+		return this.modifiers.put(modifier.getData().getPriority(), modifier);
 	}
 }

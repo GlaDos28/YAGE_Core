@@ -4,6 +4,8 @@ import core.modifier.*;
 import core.pool.CustomPool;
 import core.workManager.WorkManager;
 
+import java.util.Arrays;
+
 /**
  * Program launcher.
  *
@@ -11,7 +13,7 @@ import core.workManager.WorkManager;
  * @since 23.08.17
  */
 public final class Launcher {
-	private static final int MODIFIER_NUMBER = 2;
+	private static final int MODIFIER_NUMBER = 4;
 
 	private static final ModifierEditableBody[] MODIFIER_BODIES = new ModifierEditableBody[MODIFIER_NUMBER];
 
@@ -22,18 +24,28 @@ public final class Launcher {
 		MODIFIER_BODIES[0].setBody(data -> () -> {
 			System.out.println("Hello, world!");
 
-			data.createModifier("test pool", 0, Order.PRE, MODIFIER_BODIES[1]);
+
+			data.createModifier("test pool", 100, Order.PRE, MODIFIER_BODIES[1]);
+			data.createModifierBefore(MODIFIER_BODIES[2]);
+			data.createModifierAfter(MODIFIER_BODIES[3]);
 
 			data.doSelfDestruct();
 		});
 
 		MODIFIER_BODIES[1].setBody(data -> () -> {
-			System.out.println("And again hello, world!");
-			throw new RuntimeException("oops");
+			System.out.println("Hello inside world!");
+		});
+
+		MODIFIER_BODIES[2].setBody(data -> () -> {
+			System.out.println("Hello before world!");
+		});
+
+		MODIFIER_BODIES[3].setBody(data -> () -> {
+			System.out.println("Hello after world!");
 		});
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		WorkManager manager = new WorkManager();
 		manager
 			.attachGlobalModifier(MODIFIER_BODIES[0])
@@ -43,6 +55,7 @@ public final class Launcher {
 			manager.startLoop();
 		} catch (Exception ex) {
 			System.out.println("ERROR\n" + ex.getMessage());
+			throw ex;
 		}
 	}
 }

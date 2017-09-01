@@ -132,25 +132,24 @@ public final class GObject extends FilterExceptions<Exception> implements Execut
 		return this;
 	}
 
-	public GObject putModifier(Modifier modifier) {
+	public DoubleLinkedListElement<Pair<Integer, Executable>> putModifier(Modifier modifier) {
 		if (!WorkManager.DEFAULT_POOL_NAME.equals(modifier.getData().getPool()))
-			return this;
+			return null;
 
 		switch (modifier.getData().getOrder()) {
 			case PRE:
-				this.preModifiers.put(modifier.getData().getPriority(), modifier);
-				break;
+				return this.preModifiers.put(modifier.getData().getPriority(), modifier);
 			case POST:
-				this.postModifiers.put(modifier.getData().getPriority(), modifier);
-				break;
+				return this.postModifiers.put(modifier.getData().getPriority(), modifier);
 			case MID:
-				this.subObjectsAndMidModifiers.put(null, modifier.getData().getPriority(), modifier);
-				break;
+				return this.subObjectsAndMidModifiers.put(null, modifier.getData().getPriority(), modifier);
 			default:
 				throw new RuntimeException("unknown order " + modifier.getData().getOrder());
 		}
+	}
 
-		return this;
+	public void doDestruct() {
+		this.shouldDestruct = true;
 	}
 
 	//** other
