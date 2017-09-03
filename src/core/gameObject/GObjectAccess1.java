@@ -68,6 +68,10 @@ public final class GObjectAccess1 {
 		return this.object.putModifier(modifier);
 	}
 
+	public void putAndRegisterModifier(Modifier modifier) {
+		this.object.putAndRegisterModifier(modifier);
+	}
+
 	public void doDestruct() {
 		this.object.doDestruct();
 	}

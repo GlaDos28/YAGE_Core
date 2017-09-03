@@ -24,10 +24,10 @@ public final class PriorityList<V> {
 
 		DoubleLinkedListElement<Pair<Integer, V>> cur = this.data.getHead();
 
-		while (cur.getValue().getKey() < priority && cur.getNext() != null)
+		while (cur.getValue().getKey() > priority && cur.getNext() != null)
 			cur = cur.getNext();
 
-		if (cur.getValue().getKey() >= priority)
+		if (cur.getValue().getKey() <= priority)
 			return cur.addPrev(new Pair<>(priority, value));
 		else
 			return cur.addNext(new Pair<>(priority, value));

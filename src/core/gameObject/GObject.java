@@ -7,6 +7,7 @@ import core.misc.priorityList.PriorityList;
 import core.misc.TwoIndexedList;
 import core.misc.doubleLinkedList.DoubleLinkedListElement;
 import core.modifier.Modifier;
+import core.modifier.modifierAccessors.ModifierAccessors;
 import core.workManager.WorkManager;
 import javafx.util.Pair;
 
@@ -55,7 +56,7 @@ public final class GObject extends FilterExceptions<Exception> implements Execut
 		this.subObjectsAndMidModifiers = new TwoIndexedList<>();
 		this.preModifiers              = new PriorityList<>();
 		this.postModifiers             = new PriorityList<>();
-		this.modifierAccessors = accessors;
+		this.modifierAccessors         = accessors;
 		this.shouldDestruct            = false;
 
 		//** assigning values of attributes, markers, subObjectsAndMidModifiers and modifiers
@@ -142,6 +143,15 @@ public final class GObject extends FilterExceptions<Exception> implements Execut
 			default:
 				throw new RuntimeException("unknown order " + modifier.getData().getOrder());
 		}
+	}
+
+	public void putAndRegisterModifier(Modifier modifier) {
+		modifier.getData().setElementLink(this.putModifier(modifier));
+
+		if (!WorkManager.DEFAULT_POOL_NAME.equals(modifier.getData().getPool()))
+			modifier.getData().setElementLink(this.modifierAccessors.putInPool(modifier));
+
+		this.modifierAccessors.registerModifier(modifier);
 	}
 
 	public void doDestruct() {

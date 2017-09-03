@@ -2,11 +2,15 @@ package core.modifier;
 
 import core.gameObject.GObject;
 import core.gameObject.GObjectAccess1;
+import core.gameObject.GObjectAccess2;
 import core.gameObject.GObjectAccess3;
-import core.gameObject.ModifierAccessors;
+import core.modifier.modifierAccessors.ModifierAccessors;
 import core.misc.Executable;
 import core.misc.doubleLinkedList.DoubleLinkedListElement;
-import core.workManager.WorkManager;
+import core.workManager.listeners.newModifier.NewModifierCondition;
+import core.workManager.listeners.newModifier.NewModifierHandler;
+import core.workManager.listeners.newObject.NewObjectCondition;
+import core.workManager.listeners.newObject.NewObjectHandler;
 import javafx.util.Pair;
 
 /**
@@ -16,6 +20,7 @@ import javafx.util.Pair;
  * @since 23.08.17
  */
 public final class ModifierData implements Cloneable {
+	private       Modifier                                           modifier;
 	private       GObjectAccess1                                     objectAccessor;
 	private final ModifierAccessors                                  accessors;
 	private final String                                             pool;
@@ -25,11 +30,20 @@ public final class ModifierData implements Cloneable {
 	private       boolean                                            shouldDestructObject;
 	private       DoubleLinkedListElement<Pair<Integer, Executable>> elementLink;
 
+	public ModifierData(GObjectAccess2 object, String pool, int priority, Order order) {
+		this(object.getRawObject(), pool, priority, order);
+	}
+
 	public ModifierData(GObject object, String pool, int priority, Order order) {
-		this(new GObjectAccess1(object), object.getModifierAccessors(), pool, priority, order);
+		this(null, new GObjectAccess1(object), object.getModifierAccessors(), pool, priority, order);
 	}
 
 	private ModifierData(GObjectAccess1 objectAccessor, ModifierAccessors modifierAccessors, String pool, int priority, Order order) {
+		this(null, objectAccessor, modifierAccessors, pool, priority, order);
+	}
+
+	private ModifierData(Modifier modifier, GObjectAccess1 objectAccessor, ModifierAccessors modifierAccessors, String pool, int priority, Order order) {
+		this.modifier             = modifier;
 		this.objectAccessor       = objectAccessor;
 		this.accessors            = modifierAccessors;
 		this.pool                 = pool;
@@ -49,35 +63,41 @@ public final class ModifierData implements Cloneable {
 	//** create methods used inside modifier code
 
 	public void createSubObject(String subObjectName, int priority) {
-		this.objectAccessor.putSubObject(subObjectName, new GObject(this.accessors, subObjectName, priority));
+		GObject object = new GObject(this.accessors, subObjectName, priority);
+
+		this.objectAccessor.putSubObject(subObjectName, object);
+
+		this.accessors.registerObject(object);
 	}
 
 	public void createModifier(String pool, int priority, Order order, ModifierBody body) {
-		Modifier modifier = new Modifier(body, new ModifierData(this.objectAccessor, this.accessors, pool, priority, order));
-
-		modifier.getData().setElementLink(this.objectAccessor.putModifier(modifier));
-
-		if (!WorkManager.DEFAULT_POOL_NAME.equals(pool))
-			modifier.getData().setElementLink(this.accessors.putInPool(modifier));
+		this.objectAccessor.putAndRegisterModifier(new Modifier(body, new ModifierData(this.objectAccessor, this.accessors, pool, priority, order)));
 	}
 
 	public void createSubModifier(String subObjectName, String pool, int priority, Order order, ModifierBody body) {
-		Modifier modifier = new Modifier(body, new ModifierData(this.objectAccessor, this.accessors, pool, priority, order));
-
-		modifier.getData().setElementLink(this.objectAccessor.getSubObject(subObjectName).putModifier(modifier));
-
-		if (!WorkManager.DEFAULT_POOL_NAME.equals(pool))
-			modifier.getData().setElementLink(this.accessors.putInPool(modifier));
+		this.objectAccessor.getSubObject(subObjectName).putModifier(new Modifier(body, new ModifierData(this.objectAccessor, this.accessors, pool, priority, order)));
 	}
 
 	public void createModifierBefore(ModifierBody body) {
 		Modifier modifier = new Modifier(body, new ModifierData(this.objectAccessor, this.accessors, this.pool, this.priority, this.order));
 		modifier.getData().setElementLink(this.elementLink.addPrev(new Pair<>(this.priority, modifier)));
+
+		this.accessors.registerModifier(modifier);
 	}
 
 	public void createModifierAfter(ModifierBody body) {
 		Modifier modifier = new Modifier(body, new ModifierData(this.objectAccessor, this.accessors, this.pool, this.priority, this.order));
 		modifier.getData().setElementLink(this.elementLink.addNext(new Pair<>(this.priority, modifier)));
+
+		this.accessors.registerModifier(modifier);
+	}
+
+	public void createNewModifierListener(NewModifierCondition condition, NewModifierHandler handler) {
+		this.accessors.createNewModifierListener(this.modifier, condition, handler);
+	}
+
+	public void createNewObjectListener(NewObjectCondition condition, NewObjectHandler handler) {
+		this.accessors.createNewObjectListener(this.modifier, condition, handler);
 	}
 
 	//** destruct methods used inside modifier code
@@ -95,6 +115,10 @@ public final class ModifierData implements Cloneable {
 	}
 
 	//** methods not for using in modifier code
+
+	void setModifier(Modifier modifier) {
+		this.modifier = modifier;
+	}
 
 	public void setObjectAccessor(GObject objectAccessor) {
 		this.objectAccessor = new GObjectAccess1(objectAccessor);
@@ -130,6 +154,6 @@ public final class ModifierData implements Cloneable {
 
 	@Override
 	public ModifierData clone() {
-		return new ModifierData(this.objectAccessor, this.accessors, this.pool, this.priority, this.order);
+		return new ModifierData(this.modifier, this.objectAccessor, this.accessors, this.pool, this.priority, this.order);
 	}
 }

@@ -1,14 +1,14 @@
 package core.gameObject;
 
-import core.misc.Executable;
-import core.misc.doubleLinkedList.DoubleLinkedListElement;
 import core.modifier.Modifier;
-import javafx.util.Pair;
+import core.modifier.ModifierBody;
+import core.modifier.ModifierData;
+import core.modifier.Order;
 
 import java.util.Set;
 
 /**
- * Facade that gives second-level access to all GObject getter methods, modifier adding method, and also getSubObject() returns a GObject with a third-level access.
+ * Facade that gives second-level access to all GObject getter methods, modifier adding method (note that putModifier here is putAndRegistry method of the GObject object), and also getSubObject() returns a GObject with a third-level access.
  *
  * @author Evgeny Savelyev
  * @since 23.08.17
@@ -44,7 +44,17 @@ public final class GObjectAccess2 {
 
 	//** setters
 
-	public DoubleLinkedListElement<Pair<Integer,Executable>> putModifier(Modifier modifier) {
-		return this.object.putModifier(modifier);
+	public void putModifier(Modifier modifier) {
+		this.object.putAndRegisterModifier(modifier);
+	}
+
+	public void putModifier(ModifierBody body, String pool, int priority, Order order) {
+		this.putModifier(new Modifier(body, new ModifierData(this, pool, priority, order)));
+	}
+
+	//** for ModifierData only
+
+	public GObject getRawObject() {
+		return this.object;
 	}
 }

@@ -23,6 +23,8 @@ public final class Modifier extends FilterExceptions<Exception> implements Execu
 
 		this.body = body;
 		this.data = data;
+
+		this.data.setModifier(this);
 	}
 
 	public ModifierData getData() {

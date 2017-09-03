@@ -22,24 +22,28 @@ public final class Launcher {
 		MODIFIER_BODIES[0].setBody(data -> () -> {
 			System.out.println("Hello, world!");
 
-
 			data.createModifier("test pool", 100, Order.PRE, MODIFIER_BODIES[1]);
-			data.createModifierBefore(MODIFIER_BODIES[2]);
-			data.createModifierAfter(MODIFIER_BODIES[3]);
+
+			data.createNewObjectListener(
+				object -> true,
+				(origin, target) -> target.putModifier(MODIFIER_BODIES[2], "test pool", 50, Order.PRE)
+			);
+
+			data.createSubObject("obj", 0);
 
 			data.doSelfDestruct();
 		});
 
 		MODIFIER_BODIES[1].setBody(data -> () -> {
-			System.out.println("Hello inside world!");
+			System.out.println("=== 1 ===");
 		});
 
 		MODIFIER_BODIES[2].setBody(data -> () -> {
-			System.out.println("Hello before world!");
+			System.out.println("=== 2 ===");
 		});
 
 		MODIFIER_BODIES[3].setBody(data -> () -> {
-			System.out.println("Hello after world!");
+			System.out.println("=== 3 ===");
 		});
 	}
 

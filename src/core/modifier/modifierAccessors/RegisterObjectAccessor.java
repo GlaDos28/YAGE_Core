@@ -1,4 +1,4 @@
-package core.workManager;
+package core.modifier.modifierAccessors;
 
 import core.gameObject.GObject;
 
