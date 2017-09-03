@@ -7,8 +7,6 @@ import core.misc.priorityList.PriorityList;
 import core.misc.TwoIndexedList;
 import core.misc.doubleLinkedList.DoubleLinkedListElement;
 import core.modifier.Modifier;
-import core.workManager.MarkedObjectAccessor;
-import core.workManager.PutInPoolAccessor;
 import core.workManager.WorkManager;
 import javafx.util.Pair;
 
@@ -28,27 +26,26 @@ public final class GObject extends FilterExceptions<Exception> implements Execut
 	private final TwoIndexedList<Executable> subObjectsAndMidModifiers; /* modifiers have no name, only priority */
 	private final PriorityList<Executable>   preModifiers;
 	private final PriorityList<Executable>   postModifiers;
-	private final MarkedObjectAccessor       markedObjectAccessor;
-	private final PutInPoolAccessor          putInPool;
+	private final ModifierAccessors          modifierAccessors;
 	private       boolean                    shouldDestruct;
 
-	public GObject(MarkedObjectAccessor markedObjectAccessor, PutInPoolAccessor putInPool, String name, int priority) {
-		this(markedObjectAccessor, putInPool, name, priority, new Pair[0], new String[0], new Pair[0], new Modifier[0], null);
+	public GObject(ModifierAccessors accessors, String name, int priority) {
+		this(accessors, name, priority, new Pair[0], new String[0], new Pair[0], new Modifier[0], null);
 	}
 
-	public GObject(MarkedObjectAccessor markedObjectAccessor, PutInPoolAccessor putInPool, String name, int priority, ExceptionFilter<Exception> exceptionFilter) {
-		this(markedObjectAccessor, putInPool, name, priority, new Pair[0], new String[0], new Pair[0], new Modifier[0], exceptionFilter);
+	public GObject(ModifierAccessors accessors, String name, int priority, ExceptionFilter<Exception> exceptionFilter) {
+		this(accessors, name, priority, new Pair[0], new String[0], new Pair[0], new Modifier[0], exceptionFilter);
 	}
 
-	public GObject(MarkedObjectAccessor markedObjectAccessor, PutInPoolAccessor putInPool, String name, int priority, Modifier... modifiers) {
-		this(markedObjectAccessor, putInPool, name, priority, new Pair[0], new String[0], new Pair[0], modifiers, null);
+	public GObject(ModifierAccessors accessors, String name, int priority, Modifier... modifiers) {
+		this(accessors, name, priority, new Pair[0], new String[0], new Pair[0], modifiers, null);
 	}
 
-	public GObject(MarkedObjectAccessor markedObjectAccessor, PutInPoolAccessor putInPool, String name, int priority, ExceptionFilter<Exception> exceptionFilter, Modifier... modifiers) {
-		this(markedObjectAccessor, putInPool, name, priority, new Pair[0], new String[0], new Pair[0], modifiers, exceptionFilter);
+	public GObject(ModifierAccessors accessors, String name, int priority, ExceptionFilter<Exception> exceptionFilter, Modifier... modifiers) {
+		this(accessors, name, priority, new Pair[0], new String[0], new Pair[0], modifiers, exceptionFilter);
 	}
 
-	public GObject(MarkedObjectAccessor markedObjectAccessor, PutInPoolAccessor putInPool, String name, int priority, Pair<String, Object>[] attributes, String[] markers, Pair<String, GObject>[] subObjects, Modifier[] modifiers, ExceptionFilter<Exception> exceptionFilter) {
+	public GObject(ModifierAccessors accessors, String name, int priority, Pair<String, Object>[] attributes, String[] markers, Pair<String, GObject>[] subObjects, Modifier[] modifiers, ExceptionFilter<Exception> exceptionFilter) {
 		super(exceptionFilter);
 
 		this.name                      = name;
@@ -58,8 +55,7 @@ public final class GObject extends FilterExceptions<Exception> implements Execut
 		this.subObjectsAndMidModifiers = new TwoIndexedList<>();
 		this.preModifiers              = new PriorityList<>();
 		this.postModifiers             = new PriorityList<>();
-		this.markedObjectAccessor      = markedObjectAccessor;
-		this.putInPool                 = putInPool;
+		this.modifierAccessors = accessors;
 		this.shouldDestruct            = false;
 
 		//** assigning values of attributes, markers, subObjectsAndMidModifiers and modifiers
@@ -90,6 +86,10 @@ public final class GObject extends FilterExceptions<Exception> implements Execut
 		return this.attributes.get(attributeName);
 	}
 
+	public Set<String> getMarkers() {
+		return this.markers;
+	}
+
 	public boolean isMarked(String marker) {
 		return this.markers.contains(marker);
 	}
@@ -98,12 +98,8 @@ public final class GObject extends FilterExceptions<Exception> implements Execut
 		return (GObject) this.subObjectsAndMidModifiers.getByName(subObjectName);
 	}
 
-	public MarkedObjectAccessor getMarkedObjectAccessor() {
-		return this.markedObjectAccessor;
-	}
-
-	public PutInPoolAccessor getPutInPoolAccessor() {
-		return this.putInPool;
+	public ModifierAccessors getModifierAccessors() {
+		return this.modifierAccessors;
 	}
 
 	public boolean shouldDestruct() {

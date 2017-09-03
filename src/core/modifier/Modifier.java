@@ -10,7 +10,7 @@ import core.misc.Executable;
  * @author Evgeny Savelyev
  * @since 23.08.17
  */
-public final class Modifier extends FilterExceptions<Exception> implements Executable {
+public final class Modifier extends FilterExceptions<Exception> implements Executable, Cloneable {
 	private final ModifierBody body;
 	private final ModifierData data;
 
@@ -36,5 +36,10 @@ public final class Modifier extends FilterExceptions<Exception> implements Execu
 		} catch (Exception ex) {
 			super.filterException(ex);
 		}
+	}
+
+	@Override
+	public Modifier clone() {
+		return new Modifier(this.body, this.data.clone(), super.getExceptionFilter());
 	}
 }

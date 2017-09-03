@@ -3,10 +3,9 @@ package core.modifier;
 import core.gameObject.GObject;
 import core.gameObject.GObjectAccess1;
 import core.gameObject.GObjectAccess3;
+import core.gameObject.ModifierAccessors;
 import core.misc.Executable;
 import core.misc.doubleLinkedList.DoubleLinkedListElement;
-import core.workManager.MarkedObjectAccessor;
-import core.workManager.PutInPoolAccessor;
 import core.workManager.WorkManager;
 import javafx.util.Pair;
 
@@ -16,10 +15,9 @@ import javafx.util.Pair;
  * @author Evgeny Savelyev
  * @since 23.08.17
  */
-public final class ModifierData {
-	private final GObjectAccess1                                     objectAccess;
-	private final MarkedObjectAccessor                               markedObjectAccessor;
-	private final PutInPoolAccessor                                  putInPoolAccessor;
+public final class ModifierData implements Cloneable {
+	private       GObjectAccess1                                     objectAccessor;
+	private final ModifierAccessors                                  accessors;
 	private final String                                             pool;
 	private final int                                                priority;
 	private final Order                                              order;
@@ -28,13 +26,12 @@ public final class ModifierData {
 	private       DoubleLinkedListElement<Pair<Integer, Executable>> elementLink;
 
 	public ModifierData(GObject object, String pool, int priority, Order order) {
-		this(new GObjectAccess1(object), object.getMarkedObjectAccessor(), object.getPutInPoolAccessor(), pool, priority, order);
+		this(new GObjectAccess1(object), object.getModifierAccessors(), pool, priority, order);
 	}
 
-	private ModifierData(GObjectAccess1 objectAccess, MarkedObjectAccessor markedObjectAccessor, PutInPoolAccessor putInPoolAccessor, String pool, int priority, Order order) {
-		this.objectAccess         = objectAccess;
-		this.markedObjectAccessor = markedObjectAccessor;
-		this.putInPoolAccessor    = putInPoolAccessor;
+	private ModifierData(GObjectAccess1 objectAccessor, ModifierAccessors modifierAccessors, String pool, int priority, Order order) {
+		this.objectAccessor       = objectAccessor;
+		this.accessors            = modifierAccessors;
 		this.pool                 = pool;
 		this.priority             = priority;
 		this.order                = order;
@@ -46,40 +43,40 @@ public final class ModifierData {
 	//** info used inside modifier code
 
 	public GObjectAccess3[] getMarkedObjects(String marker) {
-		return this.markedObjectAccessor.getMarkedObjects(marker);
+		return this.accessors.getMarkedObjects(marker);
 	}
 
 	//** create methods used inside modifier code
 
 	public void createSubObject(String subObjectName, int priority) {
-		this.objectAccess.putSubObject(subObjectName, new GObject(this.markedObjectAccessor, this.putInPoolAccessor, subObjectName, priority));
+		this.objectAccessor.putSubObject(subObjectName, new GObject(this.accessors, subObjectName, priority));
 	}
 
 	public void createModifier(String pool, int priority, Order order, ModifierBody body) {
-		Modifier modifier = new Modifier(body, new ModifierData(this.objectAccess, this.markedObjectAccessor, this.putInPoolAccessor, pool, priority, order));
+		Modifier modifier = new Modifier(body, new ModifierData(this.objectAccessor, this.accessors, pool, priority, order));
 
-		modifier.getData().setElementLink(this.objectAccess.putModifier(modifier));
+		modifier.getData().setElementLink(this.objectAccessor.putModifier(modifier));
 
 		if (!WorkManager.DEFAULT_POOL_NAME.equals(pool))
-			modifier.getData().setElementLink(this.putInPoolAccessor.putInPool(modifier));
+			modifier.getData().setElementLink(this.accessors.putInPool(modifier));
 	}
 
 	public void createSubModifier(String subObjectName, String pool, int priority, Order order, ModifierBody body) {
-		Modifier modifier = new Modifier(body, new ModifierData(this.objectAccess, this.markedObjectAccessor, this.putInPoolAccessor, pool, priority, order));
+		Modifier modifier = new Modifier(body, new ModifierData(this.objectAccessor, this.accessors, pool, priority, order));
 
-		modifier.getData().setElementLink(this.objectAccess.getSubObject(subObjectName).putModifier(modifier));
+		modifier.getData().setElementLink(this.objectAccessor.getSubObject(subObjectName).putModifier(modifier));
 
 		if (!WorkManager.DEFAULT_POOL_NAME.equals(pool))
-			modifier.getData().setElementLink(this.putInPoolAccessor.putInPool(modifier));
+			modifier.getData().setElementLink(this.accessors.putInPool(modifier));
 	}
 
 	public void createModifierBefore(ModifierBody body) {
-		Modifier modifier = new Modifier(body, new ModifierData(this.objectAccess, this.markedObjectAccessor, this.putInPoolAccessor, this.pool, this.priority, this.order));
+		Modifier modifier = new Modifier(body, new ModifierData(this.objectAccessor, this.accessors, this.pool, this.priority, this.order));
 		modifier.getData().setElementLink(this.elementLink.addPrev(new Pair<>(this.priority, modifier)));
 	}
 
 	public void createModifierAfter(ModifierBody body) {
-		Modifier modifier = new Modifier(body, new ModifierData(this.objectAccess, this.markedObjectAccessor, this.putInPoolAccessor, this.pool, this.priority, this.order));
+		Modifier modifier = new Modifier(body, new ModifierData(this.objectAccessor, this.accessors, this.pool, this.priority, this.order));
 		modifier.getData().setElementLink(this.elementLink.addNext(new Pair<>(this.priority, modifier)));
 	}
 
@@ -94,13 +91,17 @@ public final class ModifierData {
 	}
 
 	public void doDestructSubObject(String subObjectName) {
-		this.objectAccess.deleteSubObject(subObjectName);
+		this.objectAccessor.deleteSubObject(subObjectName);
 	}
 
 	//** methods not for using in modifier code
 
+	public void setObjectAccessor(GObject objectAccessor) {
+		this.objectAccessor = new GObjectAccess1(objectAccessor);
+	}
+
 	public GObjectAccess1 getOwner() {
-		return this.objectAccess;
+		return this.objectAccessor;
 	}
 
 	public String getPool() {
@@ -125,5 +126,10 @@ public final class ModifierData {
 
 	public void setElementLink(DoubleLinkedListElement<Pair<Integer, Executable>> elementLink) {
 		this.elementLink = elementLink;
+	}
+
+	@Override
+	public ModifierData clone() {
+		return new ModifierData(this.objectAccessor, this.accessors, this.pool, this.priority, this.order);
 	}
 }

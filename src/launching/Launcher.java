@@ -4,8 +4,6 @@ import core.modifier.*;
 import core.pool.CustomPool;
 import core.workManager.WorkManager;
 
-import java.util.Arrays;
-
 /**
  * Program launcher.
  *

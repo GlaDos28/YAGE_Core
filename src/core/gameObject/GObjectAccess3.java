@@ -1,5 +1,7 @@
 package core.gameObject;
 
+import java.util.Set;
+
 /**
  * Facade that gives third-level access to all GObject getter methods, and also getSubObject() returns a GObject with a third-level access.
  *
@@ -17,6 +19,10 @@ public final class GObjectAccess3 {
 
 	public Object getAttribute(String attributeName) {
 		return this.object.getAttribute(attributeName);
+	}
+
+	public Set<String> getMarkers() {
+		return this.object.getMarkers();
 	}
 
 	public boolean isMarked(String marker) {

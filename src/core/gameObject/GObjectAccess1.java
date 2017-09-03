@@ -5,6 +5,8 @@ import core.misc.doubleLinkedList.DoubleLinkedListElement;
 import core.modifier.Modifier;
 import javafx.util.Pair;
 
+import java.util.Set;
+
 /**
  * Facade that gives first-level access to all GObject getter and setter methods, and also getSubObject() returns a GObject with a second-level access.
  *
@@ -22,6 +24,10 @@ public final class GObjectAccess1 {
 
 	public Object getAttribute(String attributeName) {
 		return this.object.getAttribute(attributeName);
+	}
+
+	public Set<String> getMarkers() {
+		return this.object.getMarkers();
 	}
 
 	public boolean isMarked(String marker) {

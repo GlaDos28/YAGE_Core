@@ -20,6 +20,10 @@ public abstract class FilterExceptions<E extends Exception> {
 		return this.filter != null;
 	}
 
+	protected ExceptionFilter<E> getExceptionFilter() {
+		return this.filter;
+	}
+
 	protected void filterException(E ex) throws E {
 		if (this.filter != null)
 			this.filter.filterException(ex);
